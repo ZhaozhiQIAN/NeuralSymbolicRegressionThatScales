@@ -1,9 +1,7 @@
 # NeuralSymbolicRegressionThatScales
-## The repo documentation is currently under development, please check back soon for more information.
 
-Pytorch implementation and pretrained models for the paper "Neural Symbolic Regression That Scales" 
-For details, see **Neural Symbolic Regression That Scales**.  
-[[`arXiv`](https://arxiv.org/pdf/2106.06427.pdf)] 
+Pytorch implementation and pretrained models for the paper "Neural Symbolic Regression That Scales", presented at ICML 2021. 
+For details, see **Neural Symbolic Regression That Scales**.  [[`arXiv`](https://arxiv.org/pdf/2106.06427.pdf)] 
 
 
 ## Installation
@@ -12,7 +10,7 @@ Please clone and install this repository via
 ```
 git clone https://github.com/SymposiumOrganization/NeuralSymbolicRegressionThatScales.git
 cd NeuralSymbolicRegressionThatScales/
-pip3 install -e .
+pip3 install -e src/
 ```
 
 This library requires python>3.7
@@ -20,10 +18,12 @@ This library requires python>3.7
 
 
 ## Pretrained models
-We offer two models "10M" and "100M". The first, trained on a dataset of 10M and without constant prediction, is the one used for experiements in our paper. The second is trained on 100M [[Link](https://drive.google.com/drive/folders/1LTKUX-KhoUbW-WOx-ZJ8KitxK7Nov41G?usp=sharing)] of equations and with constant prediction enabled.
-For both models, the equations included in data/benchmark/tests.csv are held out during training.
+We offer two models, "10M" and "100M".  Both are trained with parameter configuration showed in **dataset_configuration.json** (which contains details about how datasets are created) and **scripts/config.yaml** (which contains details of how models are trained). "10M" model is trained with 10 million datasets and "100M" model is trained with 100 millions dataset.
 
-If you want to try the models out, look at **jupyter/fit_func.ipynb**.
+* Link to 100M: [[Link](https://drive.google.com/drive/folders/1LTKUX-KhoUbW-WOx-ZJ8KitxK7Nov41G?usp=sharing)]
+* Link to 10M: [[Link](https://drive.google.com/file/d/1cNZq3dLnSUKEm-ujDl2mb2cCCorv7kOC/view?usp=sharing)]
+
+If you want to try the models out, look at **jupyter/fit_func.ipynb**. Before running the notebook, make sure to first create a folder named "weights" and to download the provided checkpoints there.
 
 
 ## Dataset Generation
@@ -47,7 +47,7 @@ There are two ways to generate this dataset:
 
 * If you are running on linux, you use makefile in terminal as follows:
 ```
-export NUM=${NumberOfEquations} #Export num variable
+export NUM=${NumberOfEquations} #Export num of equations
 make data/raw_datasets/${NUM}: #Launch make file command
 ```
 NumberOfEquations can be defined in two formats with K or M suffix. For instance 100K is equal to 100'000 while 10M is equal to 10'0000000
@@ -73,27 +73,32 @@ hence this validation dataset should be **small**. For our paper it constisted o
 
 ```
 #Code for generating a 150 equation dataset 
-python3 scripts/data_creation/dataset_creation.py --number_of_equations 150 --no-debug 
+python3 scripts/data_creation/dataset_creation.py --number_of_equations 150 --no-debug #This code creates a new folder data/raw_datasets/150
 ```
 
-Now you convert the newly created validation dataset in the csv format. First in **scripts/config.yaml** replace the entry of *raw_test_path* with the path to your test set. For instance if you have created a dataset equations it would be **data/raw_datasets/150**) then run: `python3 scripts/csv_handling/dataload_format_to_csv.py`
-
-This command will create csv file named test.csv in the test_set folder.
+If you want, you can convert the newly created validation dataset in a csv format. 
+To do so, run: `python3 scripts/csv_handling/dataload_format_to_csv.py raw_test_path=data/raw_datasets/150`
+This command will create two csv files named test_nc.csv (equations without constants) and test_wc.csv (equation with constants) in the test_set folder.
 
 ### Remove test and numerical problematic equations from the training dataset 
-
+The following steps will remove the validation equations from the training set and remove equations that are always nan, inf, etc.
+* `path_to_data_folder=data/raw_datasets/100000`  if you have created a 100K dataset
+* `path_to_csv=test_set/test_nc.csv` if you have created 150 equations for validation. If you want to use the one in the paper replace it with `nc.csv`
 ```
-python3 scripts/data_creation/filter_from_already_existing.py --data_path data/raw_datasets/${NUM} --csv_path pathToValidate equations #You can leave csv_path empty if you want to create a validation set
-python3 scripts/data_creation/filter_validation.py --val_path data/datasets/${NUM}/${NUM}_val
-python3 scripts/data_creation/to_h5.py --folder_dataset data/datasets/${NUM} 
+python3 scripts/data_creation/filter_from_already_existing.py --data_path path_to_data_folder --csv_path path_to_csv #You can leave csv_path empty if you do not want to create a validation set
+python3 scripts/data_creation/apply_filtering.py --data_path path_to_data_folder 
 ```
-
-
-
+You should now have a folder named data/datasets/100000. This will be the training folder.
 
 ## Training
 Once you have created your training and validation datasets run 
 ```
 python3 scripts/train.py
 ```
-You can configure the config.yaml with the necessary options
+You can configure the config.yaml with the necessary options. Most important, make sure you have set 
+train_path and val_path correctly. If you have followed the 100K example this should be set as:
+```
+train_path:  data/datasets/100000
+val_path: data/raw_datasets/150
+```
+

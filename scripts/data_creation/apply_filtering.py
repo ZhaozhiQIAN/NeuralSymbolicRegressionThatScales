@@ -17,7 +17,6 @@ def create_hdf_files(metadata, keep_true, base_path: Path, target_path: Path, de
     counter = 0
     print("Diving sets")
     sets = [[keep_true[idx] for idx in range(i*num_eqs_per_set,min((i+1)*num_eqs_per_set,len(keep_true)))] for i in range(n_datasets)]
-    assert sets[0][0] != sets[0][1] and sets[0][0] != sets[1][0] 
     if not debug:
         with multiprocessing.Pool(4) as p: #multiprocessing.cpu_count()) as p:
             max_ = n_datasets
@@ -40,15 +39,15 @@ def create_hdf_files(metadata, keep_true, base_path: Path, target_path: Path, de
 
 
 @click.command()
-@click.option("--base_path", default="data/raw_datasets/10000000/")
-@click.option("--debug/--no-debug", default=True)
-def main(base_path,debug):
-    bool_cond = np.load(os.path.join(base_path,"filtered.npy"),allow_pickle=True)
+@click.option("--data_path", default="data/raw_datasets/10000000/")
+@click.option("--debug/--no-debug", default=False)
+def main(data_path,debug):
+    bool_cond = np.load(os.path.join(data_path,"filtered.npy"),allow_pickle=True)
     entries = [idx for idx, entry in bool_cond if entry]
-    metatada = load_metadata_hdf5(base_path)
-    base_path = Path(base_path)
-    target_path = Path(base_path.parent.parent / Path("datasets") / base_path.stem)
-    create_hdf_files(metatada, entries, base_path, target_path, debug)
+    metatada = load_metadata_hdf5(data_path)
+    data_path = Path(data_path)
+    target_path = Path(data_path.parent.parent / Path("datasets") / data_path.stem)
+    create_hdf_files(metatada, entries, data_path, target_path, debug)
     
 
 
